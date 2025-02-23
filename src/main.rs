@@ -1,10 +1,13 @@
 use ::rocket::async_main;
 use anyhow::Result;
-use std::{path::PathBuf, time::Duration};
-
 use clap::Parser;
-use espflash::{elf::FirmwareImageBuilder, Chip, FlashSize, PartitionTable};
+use espflash::{
+    elf::ElfFirmwareImage,
+    flasher::{FlashData, FlashSettings},
+    targets::{Chip, XtalFrequency},
+};
 use rocket::{response::content, State};
+use std::{path::PathBuf, time::Duration};
 
 #[macro_use]
 extern crate rocket;
@@ -54,7 +57,7 @@ fn index() -> content::RawHtml<&'static str> {
                 <div id=\"main\" style=\"display: none;\">
 
                     <br>
-                    <script type=\"module\" src=\"https://unpkg.com/esp-web-tools@9.4.3/dist/web/install-button.js?module\">
+                    <script type=\"module\" src=\"https://unpkg.com/esp-web-tools@10.1.0/dist/web/install-button.js?module\">
                     </script>
                     <esp-web-install-button id=\"installButton\" manifest=\"manifest.json\"></esp-web-install-button>
                     <br>
@@ -164,7 +167,6 @@ fn manifest() -> content::RawJson<&'static str> {
 }
 
 struct PartsData {
-    chip: String,
     bootloader: Vec<u8>,
     partitions: Vec<u8>,
     firmware: Vec<u8>,
@@ -173,41 +175,33 @@ struct PartsData {
 fn prepare() -> Result<PartsData> {
     let opts = Args::parse();
 
+    let flash_data = FlashData::new(
+        opts.bootloader.as_deref(),
+        opts.partition_table.as_deref(),
+        None,
+        None,
+        FlashSettings::default(),
+        0,
+    )?;
+
     let elf = std::fs::read(opts.elf)?;
+    let image = ElfFirmwareImage::try_from(elf.as_slice())?;
+    let chip = Chip::try_from(opts.chip)?;
+    let xtal_freq = XtalFrequency::default(chip);
 
-    let p = if let Some(p) = &opts.partition_table {
-        Some(PartitionTable::try_from_bytes(std::fs::read(p)?)?)
-    } else {
-        None
-    };
+    // save_elf_as_image(elf, chip, "", false, false, xtal_frequency);
 
-    let b = if let Some(p) = &opts.bootloader {
-        Some(std::fs::read(p)?)
-    } else {
-        None
-    };
+    let image = chip
+        .into_target()
+        .get_flash_image(&image, flash_data, None, xtal_freq)?;
 
-    let firmware = FirmwareImageBuilder::new(&elf)
-        .flash_size(Some(FlashSize::Flash4Mb)) // TODO make configurable
-        .build()?;
+    let parts = image.flash_segments().collect::<Vec<_>>();
 
-    let chip = opts.chip;
-    let chip_name = match chip {
-        Chip::Esp32 => "ESP32",
-        Chip::Esp32c3 => "ESP32-C3",
-        Chip::Esp32s2 => "ESP32-S2",
-        Chip::Esp32s3 => "ESP32-S3",
-        Chip::Esp8266 => "ESP8266",
-    };
-
-    let image = chip.get_flash_image(&firmware, b, p, None, None)?;
-    let parts: Vec<_> = image.flash_segments().collect();
     let bootloader = &parts[0];
     let partitions = &parts[1];
     let app = &parts[2];
 
     Ok(PartsData {
-        chip: chip_name.to_string(),
         bootloader: bootloader.data.to_vec(),
         partitions: partitions.data.to_vec(),
         firmware: app.data.to_vec(),
