@@ -189,8 +189,6 @@ fn prepare() -> Result<PartsData> {
     let chip = Chip::try_from(opts.chip)?;
     let xtal_freq = XtalFrequency::default(chip);
 
-    // save_elf_as_image(elf, chip, "", false, false, xtal_frequency);
-
     let image = chip
         .into_target()
         .get_flash_image(&image, flash_data, None, xtal_freq)?;
