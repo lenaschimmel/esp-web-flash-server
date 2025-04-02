@@ -57,7 +57,7 @@ fn index() -> content::RawHtml<&'static str> {
                 <div id=\"main\" style=\"display: none;\">
 
                     <br>
-                    <script type=\"module\" src=\"https://unpkg.com/esp-web-tools@10.1.0/dist/web/install-button.js?module\">
+                    <script type=\"module\" src=\"https://cdn.jsdelivr.net/npm/esp-web-tools@10.1.0/dist/web/install-button.js\">
                     </script>
                     <esp-web-install-button id=\"installButton\" manifest=\"manifest.json\"></esp-web-install-button>
                     <br>

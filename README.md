@@ -3,7 +3,7 @@
 Starts a local server serving a web page to flash a given ELF file.
 
 ```
-web-flash 0.1.0
+web-flash 0.3.0
 
 USAGE:
     web-flash.exe [OPTIONS] --chip <CHIP> <ELF>
