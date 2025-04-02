@@ -1,0 +1,30 @@
+// For format details, see https://aka.ms/devcontainer.json. For config options, see the
+// README at: https://github.com/devcontainers/templates/tree/main/src/debian
+{
+	"name": "esp_web_flash_server",
+	"build": {
+		"dockerfile": "Dockerfile",
+		"args": {
+			"CONTAINER_USER": "esp",
+			"CONTAINER_GROUP": "esp",
+			"ESP_BOARD": "esp32s3"
+		}
+	},
+	"forwardPorts": [
+		8000
+	],
+	"workspaceMount": "source=${localWorkspaceFolder},target=/home/esp/esp_web_flash_server,type=bind,consistency=cached",
+	"workspaceFolder": "/home/esp/esp_web_flash_server",
+	"mounts": [
+		"source=${localEnv:HOME}/.ssh,target=/home/esp/.ssh,type=bind,consistency=cached"
+	],
+	"customizations": {
+		"vscode": {
+			"extensions": [
+				"rust-lang.rust-analyzer",
+				"tamasfe.even-better-toml",
+				"fill-labs.dependi"
+			]
+		}
+	}
+}
